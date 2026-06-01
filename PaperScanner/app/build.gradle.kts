@@ -79,6 +79,9 @@ dependencies {
     // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
+    // ExifInterface for image rotation
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
     // OpenCV Android SDK
     implementation("org.opencv:opencv:4.9.0")
 

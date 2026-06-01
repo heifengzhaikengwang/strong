@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">试卷扫描王</string>
+    <string name="start_scan">开始扫描</string>
+    <string name="take_photo">拍照</string>
+    <string name="finish_scan">完成扫描</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="delete">删除</string>
+    <string name="share">分享</string>
+    <string name="save">保存</string>
+    <string name="preview">预览</string>
+    <string name="processing">处理中...</string>
+    <string name="scan_complete">扫描完成</string>
+    <string name="no_photos">暂无扫描记录</string>
+    <string name="permission_required">需要相机权限</string>
+    <string name="photo_saved">照片已保存</string>
+    <string name="page_count">第 %1$d / %2$d 页</string>
+    <string name="drag_to_adjust">拖动顶点调整裁剪区域</string>
+    <string name="continue_capture">继续拍摄</string>
+</resources>
