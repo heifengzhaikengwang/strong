@@ -20,7 +20,7 @@ class CropOverlayView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     companion object {
-        private const val A4_RATIO = 210.0 / 297.0
+        private const val A4_RATIO = 210f / 297f
         private const val CORNER_RADIUS = 24f
         private const val BORDER_WIDTH = 3f
         private const val TOUCH_TOLERANCE = 48f
