@@ -22,6 +22,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.paperscanner.app.R
 import com.paperscanner.app.databinding.ActivityScannerBinding
+import com.paperscanner.app.util.ScannerDataManager
 import com.paperscanner.app.viewmodel.ScanViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -30,6 +31,7 @@ class ScannerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityScannerBinding
     private val viewModel: ScanViewModel by viewModels()
+    private val dataManager = ScannerDataManager
 
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
@@ -70,7 +72,7 @@ class ScannerActivity : AppCompatActivity() {
         }
 
         binding.btnFinish.setOnClickListener {
-            if ((viewModel.capturedImages.value?.size ?: 0) > 0) {
+            if (dataManager.getCount() > 0) {
                 openPreview()
             }
         }
@@ -78,20 +80,23 @@ class ScannerActivity : AppCompatActivity() {
         binding.cropOverlayView.onCornersChanged = { corners ->
             Log.d("CropOverlay", "Corners changed: $corners")
         }
+        
+        updateUI()
+    }
+
+    private fun updateUI() {
+        val count = dataManager.getCount()
+        if (count > 0) {
+            binding.tvPageCount.visibility = View.VISIBLE
+            binding.tvPageCount.text = count.toString()
+            binding.btnFinish.visibility = View.VISIBLE
+        } else {
+            binding.tvPageCount.visibility = View.GONE
+            binding.btnFinish.visibility = View.GONE
+        }
     }
 
     private fun observeViewModel() {
-        viewModel.pageCount.observe(this) { count ->
-            if (count > 0) {
-                binding.tvPageCount.visibility = View.VISIBLE
-                binding.tvPageCount.text = count.toString()
-                binding.btnFinish.visibility = View.VISIBLE
-            } else {
-                binding.tvPageCount.visibility = View.GONE
-                binding.btnFinish.visibility = View.GONE
-            }
-        }
-
         viewModel.currentProcessing.observe(this) { isProcessing ->
             binding.btnCapture.isEnabled = !isProcessing
         }
@@ -177,9 +182,12 @@ class ScannerActivity : AppCompatActivity() {
             previewHeight.toFloat()
         )
 
-        viewModel.addCapturedImage(scaledBitmap, scaledCropPoints)
+        viewModel.viewModelScope.launch {
+            viewModel.addCapturedImage(scaledBitmap, scaledCropPoints)
+        }
 
         runOnUiThread {
+            updateUI()
             binding.btnCapture.isEnabled = true
             Toast.makeText(this, "拍照成功", Toast.LENGTH_SHORT).show()
         }

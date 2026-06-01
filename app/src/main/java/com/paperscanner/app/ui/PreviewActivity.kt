@@ -16,6 +16,7 @@ import com.paperscanner.app.R
 import com.paperscanner.app.databinding.ActivityPreviewBinding
 import com.paperscanner.app.ui.adapter.PreviewAdapter
 import com.paperscanner.app.util.FileUtils
+import com.paperscanner.app.util.ScannerDataManager
 import com.paperscanner.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class PreviewActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPreviewBinding
     private val viewModel: ScanViewModel by viewModels()
+    private val dataManager = ScannerDataManager
     private lateinit var previewAdapter: PreviewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,10 +37,24 @@ class PreviewActivity : AppCompatActivity() {
         binding = ActivityPreviewBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize ViewModel with data from manager
+        val images = dataManager.getImages()
+        viewModel._capturedImages.value = images.toMutableList()
+        viewModel._pageCount.value = images.size
+
         setupUI()
         setupRecyclerView()
         observeViewModel()
         setupBackHandler()
+        
+        // Update adapter initially
+        previewAdapter.submitList(images.toList())
+        previewAdapter.setTotalCount(images.size)
+        
+        // Show first image as preview
+        if (images.isNotEmpty()) {
+            updateMainPreview(0)
+        }
     }
 
     private fun setupUI() {
@@ -66,6 +82,7 @@ class PreviewActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         previewAdapter = PreviewAdapter { position ->
             previewAdapter.setSelectedPosition(position)
+            updateMainPreview(position)
         }
 
         binding.rvPreview.apply {
@@ -77,10 +94,16 @@ class PreviewActivity : AppCompatActivity() {
             adapter = previewAdapter
         }
     }
+    
+    private fun updateMainPreview(position: Int) {
+        val images = dataManager.getImages()
+        if (position in images.indices) {
+            binding.ivMainPreview.setImageBitmap(images[position])
+        }
+    }
 
     private fun observeViewModel() {
         viewModel.capturedImages.observe(this) { images ->
-            previewAdapter.submitList(images.toList())
             if (images.isEmpty()) {
                 finish()
             }
@@ -99,10 +122,21 @@ class PreviewActivity : AppCompatActivity() {
                 .setMessage("确定要删除第 ${position + 1} 页吗？")
                 .setPositiveButton("删除") { _, _ ->
                     viewModel.removeImage(position)
+                    refreshAdapter()
+                    if (dataManager.getCount() > 0) {
+                        val newPos = if (position < dataManager.getCount()) position else dataManager.getCount() - 1
+                        updateMainPreview(newPos)
+                    }
                 }
                 .setNegativeButton("取消", null)
                 .show()
         }
+    }
+    
+    private fun refreshAdapter() {
+        val images = dataManager.getImages()
+        previewAdapter.submitList(images.toList())
+        previewAdapter.setTotalCount(images.size)
     }
 
     private fun openScanner() {
@@ -110,7 +144,7 @@ class PreviewActivity : AppCompatActivity() {
     }
 
     private fun shareImages() {
-        val images = viewModel.getImages()
+        val images = dataManager.getImages()
         if (images.isEmpty()) {
             Toast.makeText(this, "没有可分享的图片", Toast.LENGTH_SHORT).show()
             return
@@ -164,7 +198,7 @@ class PreviewActivity : AppCompatActivity() {
     }
 
     private fun saveImages() {
-        val images = viewModel.getImages()
+        val images = dataManager.getImages()
         if (images.isEmpty()) {
             Toast.makeText(this, "没有可保存的图片", Toast.LENGTH_SHORT).show()
             return

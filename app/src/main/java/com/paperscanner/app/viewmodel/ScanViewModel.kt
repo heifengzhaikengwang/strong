@@ -10,6 +10,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.paperscanner.app.scanner.ImageProcessor
 import com.paperscanner.app.util.FileUtils
+import com.paperscanner.app.util.ScannerDataManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,10 +27,19 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _pageCount = MutableLiveData<Int>(0)
     val pageCount: LiveData<Int> = _pageCount
 
+    private val dataManager = ScannerDataManager
+
     init {
         System.loadLibrary("opencv_java4")
         if (!OpenCVLoader.initLocal()) {
             OpenCVLoader.initDebug()
+        }
+        
+        // Initialize with current data from manager
+        val images = dataManager.getImages()
+        if (images.isNotEmpty()) {
+            _capturedImages.value = images.toMutableList()
+            _pageCount.value = images.size
         }
     }
 
@@ -47,6 +57,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             _capturedImages.value = currentList
             _pageCount.value = currentList.size
 
+            // Also save to data manager
+            dataManager.addImage(processedBitmap)
+
             _currentProcessing.value = false
         }
     }
@@ -63,6 +76,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             currentList.removeAt(index)
             _capturedImages.value = currentList
             _pageCount.value = currentList.size
+            dataManager.removeImage(index)
         }
     }
 
@@ -71,6 +85,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         currentList.forEach { it.recycle() }
         _capturedImages.value = mutableListOf()
         _pageCount.value = 0
+        dataManager.clearAll()
     }
 
     fun getImages(): List<Bitmap> {
