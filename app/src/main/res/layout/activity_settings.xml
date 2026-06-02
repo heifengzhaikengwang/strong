@@ -53,8 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:justifyContent="space-between">
+            android:gravity="center_vertical">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -109,7 +108,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gap="12dp">
+            >
 
             <Button
                 android:id="@+id/btnLevelWeak"
@@ -189,7 +188,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:justifyContent="space-between"
+                    ="space-between"
                     android:layout_marginTop="8dp">
 
                     <TextView
@@ -254,7 +253,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:justifyContent="space-between"
+                    ="space-between"
                     android:layout_marginTop="8dp">
 
                     <TextView
@@ -319,7 +318,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:justifyContent="space-between"
+                    ="space-between"
                     android:layout_marginTop="8dp">
 
                     <TextView
@@ -384,7 +383,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:justifyContent="space-between"
+                    ="space-between"
                     android:layout_marginTop="8dp">
 
                     <TextView
@@ -449,7 +448,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:justifyContent="space-between"
+                    ="space-between"
                     android:layout_marginTop="8dp">
 
                     <TextView
