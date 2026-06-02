@@ -105,6 +105,10 @@ object ImageProcessor {
     }
 
     fun enhanceDocument(src: Mat): Mat {
+        return enhanceDocument(src, null)
+    }
+
+    fun enhanceDocument(src: Mat, params: FloatArray?): Mat {
         val gray = Mat()
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
 
@@ -114,7 +118,13 @@ object ImageProcessor {
         val blockSize: Int
         val constant: Double
 
-        if (EnhanceParams.autoMode) {
+        if (params != null) {
+            blurSize = params[0].toInt()
+            sharpenCenter = params[1].toDouble()
+            sharpenSurround = params[2].toDouble()
+            blockSize = params[3].toInt()
+            constant = params[4].toDouble()
+        } else if (EnhanceParams.autoMode) {
             val brightness = calculateBrightness(gray)
             val contrast = calculateContrast(gray)
             val noise = calculateNoise(gray)

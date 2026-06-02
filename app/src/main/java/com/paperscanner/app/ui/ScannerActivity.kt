@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.core.content.ContextCompat
 import com.paperscanner.app.R
 import com.paperscanner.app.databinding.ActivityScannerBinding
 import com.paperscanner.app.scanner.ImageProcessor
+import com.paperscanner.app.util.EnhanceParams
 import com.paperscanner.app.util.ScannerDataManager
 import com.paperscanner.app.viewmodel.ScanViewModel
 import org.opencv.android.Utils
@@ -48,6 +50,7 @@ class ScannerActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
     private var isRealTimePreview = false
     private var frameCount = 0
+    private var previewParams: FloatArray? = null
 
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -69,6 +72,7 @@ class ScannerActivity : AppCompatActivity() {
         observeViewModel()
         startCamera()
         setupBackHandler()
+        loadCurrentParams()
     }
 
     private fun setupUI() {
@@ -98,11 +102,66 @@ class ScannerActivity : AppCompatActivity() {
             toggleRealTimePreview()
         }
 
+        binding.seekBarBlur.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                updatePreviewParams()
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        binding.seekBarSharpen.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                updatePreviewParams()
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        binding.seekBarThreshold.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                updatePreviewParams()
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        binding.btnResetParams.setOnClickListener {
+            resetPreviewParams()
+        }
+
         binding.cropOverlayView.onCornersChanged = { corners ->
             Log.d("CropOverlay", "Corners changed: $corners")
         }
         
         updateUI()
+    }
+
+    private fun loadCurrentParams() {
+        binding.seekBarBlur.progress = EnhanceParams.blurSize
+        binding.seekBarSharpen.progress = ((EnhanceParams.sharpenCenter + 1) * 20).toInt()
+        binding.seekBarThreshold.progress = EnhanceParams.thresholdConstant.toInt()
+        updatePreviewParams()
+    }
+
+    private fun updatePreviewParams() {
+        val blurSize = binding.seekBarBlur.progress.toFloat()
+        val sharpenCenter = (binding.seekBarSharpen.progress / 20f) - 1f
+        val sharpenSurround = -0.5f
+        val blockSize = 15f
+        val thresholdConstant = binding.seekBarThreshold.progress.toFloat()
+
+        previewParams = floatArrayOf(blurSize, sharpenCenter, sharpenSurround, blockSize, thresholdConstant)
+
+        binding.tvBlurValue.text = blurSize.toInt().toString()
+        binding.tvSharpenValue.text = String.format("%.1f", sharpenCenter)
+        binding.tvThresholdValue.text = thresholdConstant.toInt().toString()
+    }
+
+    private fun resetPreviewParams() {
+        EnhanceParams.resetToDefault()
+        loadCurrentParams()
+        Toast.makeText(this, "参数已重置", Toast.LENGTH_SHORT).show()
     }
 
     private fun openSettings() {
@@ -114,9 +173,11 @@ class ScannerActivity : AppCompatActivity() {
         isRealTimePreview = !isRealTimePreview
         if (isRealTimePreview) {
             binding.btnTogglePreview.setImageResource(R.drawable.ic_camera)
+            binding.paramsPanel.visibility = View.VISIBLE
             Toast.makeText(this, "已开启实时预览", Toast.LENGTH_SHORT).show()
         } else {
             binding.btnTogglePreview.setImageResource(R.drawable.ic_preview)
+            binding.paramsPanel.visibility = View.GONE
             binding.ivPreviewOverlay.setImageBitmap(null)
             binding.ivPreviewOverlay.visibility = View.GONE
             Toast.makeText(this, "已关闭实时预览", Toast.LENGTH_SHORT).show()
@@ -204,7 +265,7 @@ class ScannerActivity : AppCompatActivity() {
             val src = Mat()
             Utils.bitmapToMat(smallBitmap, src)
 
-            val enhanced = ImageProcessor.enhanceDocument(src)
+            val enhanced = ImageProcessor.enhanceDocument(src, previewParams)
             val outputBitmap = Bitmap.createBitmap(enhanced.cols(), enhanced.rows(), Bitmap.Config.ARGB_8888)
             Utils.matToBitmap(enhanced, outputBitmap)
 
