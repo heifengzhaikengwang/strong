@@ -474,8 +474,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gap="16dp">
+                android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/btnReset"
