@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
+import org.opencv.core.MatOfDouble
 import org.opencv.core.MatOfPoint
 import org.opencv.core.MatOfPoint2f
 import org.opencv.core.Point
@@ -164,8 +165,8 @@ object ImageProcessor {
     }
 
     private fun calculateBrightness(src: Mat): Double {
-        val mean = org.opencv.core.Mat()
-        val std = org.opencv.core.Mat()
+        val mean = MatOfDouble()
+        val std = MatOfDouble()
         Core.meanStdDev(src, mean, std)
         val brightness = mean.get(0, 0)[0] / 255.0
         mean.release()
@@ -174,8 +175,8 @@ object ImageProcessor {
     }
 
     private fun calculateContrast(src: Mat): Double {
-        val mean = org.opencv.core.Mat()
-        val std = org.opencv.core.Mat()
+        val mean = MatOfDouble()
+        val std = MatOfDouble()
         Core.meanStdDev(src, mean, std)
         val contrast = std.get(0, 0)[0] / 255.0
         mean.release()
@@ -186,8 +187,8 @@ object ImageProcessor {
     private fun calculateNoise(src: Mat): Double {
         val laplacian = Mat()
         Imgproc.Laplacian(src, laplacian, org.opencv.core.CvType.CV_64F)
-        val mean = org.opencv.core.Mat()
-        val std = org.opencv.core.Mat()
+        val mean = MatOfDouble()
+        val std = MatOfDouble()
         Core.meanStdDev(laplacian, mean, std)
         val noise = std.get(0, 0)[0] / 100.0
         laplacian.release()
