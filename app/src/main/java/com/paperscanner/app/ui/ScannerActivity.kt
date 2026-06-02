@@ -16,6 +16,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -33,6 +34,7 @@ import org.opencv.core.Point
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class ScannerActivity : AppCompatActivity() {
 
@@ -42,7 +44,10 @@ class ScannerActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
+    private lateinit var analysisExecutor: ExecutorService
     private var cameraProvider: ProcessCameraProvider? = null
+    private var isRealTimePreview = false
+    private var frameCount = 0
 
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -58,6 +63,7 @@ class ScannerActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+        analysisExecutor = Executors.newSingleThreadExecutor()
 
         setupUI()
         observeViewModel()
@@ -88,6 +94,10 @@ class ScannerActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnTogglePreview.setOnClickListener {
+            toggleRealTimePreview()
+        }
+
         binding.cropOverlayView.onCornersChanged = { corners ->
             Log.d("CropOverlay", "Corners changed: $corners")
         }
@@ -98,6 +108,19 @@ class ScannerActivity : AppCompatActivity() {
     private fun openSettings() {
         val intent = Intent(this, SettingsActivity::class.java)
         startActivity(intent)
+    }
+
+    private fun toggleRealTimePreview() {
+        isRealTimePreview = !isRealTimePreview
+        if (isRealTimePreview) {
+            binding.btnTogglePreview.setImageResource(R.drawable.ic_camera)
+            Toast.makeText(this, "已开启实时预览", Toast.LENGTH_SHORT).show()
+        } else {
+            binding.btnTogglePreview.setImageResource(R.drawable.ic_preview)
+            binding.ivPreviewOverlay.setImageBitmap(null)
+            binding.ivPreviewOverlay.visibility = View.GONE
+            Toast.makeText(this, "已关闭实时预览", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun updateUI() {
@@ -134,6 +157,19 @@ class ScannerActivity : AppCompatActivity() {
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
 
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+                .also {
+                    it.setAnalyzer(analysisExecutor, ImageAnalysis.Analyzer { imageProxy ->
+                        if (isRealTimePreview) {
+                            processFrameForPreview(imageProxy)
+                        } else {
+                            imageProxy.close()
+                        }
+                    })
+                }
+
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -142,7 +178,8 @@ class ScannerActivity : AppCompatActivity() {
                     this,
                     cameraSelector,
                     preview,
-                    imageCapture
+                    imageCapture,
+                    imageAnalysis
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Use case binding failed", e)
@@ -150,6 +187,40 @@ class ScannerActivity : AppCompatActivity() {
             }
 
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun processFrameForPreview(imageProxy: ImageProxy) {
+        frameCount++
+        if (frameCount % 3 != 0) {
+            imageProxy.close()
+            return
+        }
+
+        try {
+            val bitmap = imageProxyToBitmap(imageProxy)
+            val smallBitmap = Bitmap.createScaledBitmap(bitmap, bitmap.width / 4, bitmap.height / 4, true)
+            bitmap.recycle()
+
+            val src = Mat()
+            Utils.bitmapToMat(smallBitmap, src)
+
+            val enhanced = ImageProcessor.enhanceDocument(src)
+            val outputBitmap = Bitmap.createBitmap(enhanced.cols(), enhanced.rows(), Bitmap.Config.ARGB_8888)
+            Utils.matToBitmap(enhanced, outputBitmap)
+
+            src.release()
+            enhanced.release()
+            smallBitmap.recycle()
+
+            runOnUiThread {
+                binding.ivPreviewOverlay.setImageBitmap(outputBitmap)
+                binding.ivPreviewOverlay.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Frame processing failed", e)
+        } finally {
+            imageProxy.close()
+        }
     }
 
     private fun takePhoto() {
@@ -229,7 +300,7 @@ class ScannerActivity : AppCompatActivity() {
 
         val scaleX = previewWidth.toFloat() / bitmap.width
         val scaleY = previewHeight.toFloat() / bitmap.height
-        val scale = maxOf(scaleX, scaleY)
+        val scale = max(scaleX, scaleY)
 
         val newWidth = (bitmap.width * scale).toInt()
         val newHeight = (bitmap.height * scale).toInt()
@@ -321,6 +392,7 @@ class ScannerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        analysisExecutor.shutdown()
     }
 
     companion object {

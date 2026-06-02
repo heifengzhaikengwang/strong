@@ -17,6 +17,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/ivPreviewOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/controlsContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.paperscanner.app.ui.widget.CropOverlayView
         android:id="@+id/cropOverlayView"
         android:layout_width="0dp"
@@ -47,6 +58,19 @@
         android:contentDescription="设置"
         android:src="@drawable/ic_settings"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/white" />
+
+    <ImageButton
+        android:id="@+id/btnTogglePreview"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_circle_semi_transparent"
+        android:contentDescription="实时预览"
+        android:src="@drawable/ic_preview"
+        app:layout_constraintEnd_toStartOf="@id/btnSettings"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/white" />
 
