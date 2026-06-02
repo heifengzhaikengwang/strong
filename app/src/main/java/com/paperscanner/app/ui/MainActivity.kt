@@ -52,6 +52,15 @@ class MainActivity : AppCompatActivity() {
         binding.btnStartScan.setOnClickListener {
             checkCameraPermissionAndOpen()
         }
+
+        binding.ivSettings.setOnClickListener {
+            openSettings()
+        }
+    }
+
+    private fun openSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
     }
 
     private fun setupHistoryRecyclerView() {

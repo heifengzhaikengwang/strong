@@ -105,14 +105,17 @@ object ImageProcessor {
         val gray = Mat()
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
 
+        val blurSize = EnhanceParams.blurSize.toDouble()
         val blurred = Mat()
-        Imgproc.GaussianBlur(gray, blurred, Size(5.0, 5.0), 0.0)
+        Imgproc.GaussianBlur(gray, blurred, Size(blurSize, blurSize), 0.0)
 
         val sharpenKernel = Mat(3, 3, org.opencv.core.CvType.CV_32F)
+        val center = EnhanceParams.sharpenCenter.toDouble()
+        val surround = EnhanceParams.sharpenSurround.toDouble()
         sharpenKernel.put(0, 0,
-            0.0, -0.5, 0.0,
-            -0.5, 3.0, -0.5,
-            0.0, -0.5, 0.0
+            0.0, surround, 0.0,
+            surround, center, surround,
+            0.0, surround, 0.0
         )
 
         val sharpened = Mat()
@@ -125,8 +128,8 @@ object ImageProcessor {
             255.0,
             Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
             Imgproc.THRESH_BINARY,
-            15,
-            8.0
+            EnhanceParams.thresholdBlockSize,
+            EnhanceParams.thresholdConstant
         )
 
         sharpenKernel.release()
