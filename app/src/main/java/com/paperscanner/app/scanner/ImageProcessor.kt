@@ -186,6 +186,64 @@ object ImageProcessor {
         return noise
     }
 
+    fun detectEdges(src: Mat): Mat {
+        val gray = Mat()
+        Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
+
+        val blurred = Mat()
+        Imgproc.GaussianBlur(gray, blurred, Size(5.0, 5.0), 0.0)
+
+        val edges = Mat()
+        Imgproc.Canny(blurred, edges, 50.0, 150.0)
+
+        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+        Imgproc.dilate(edges, edges, kernel)
+        Imgproc.erode(edges, edges, kernel)
+
+        gray.release()
+        blurred.release()
+        kernel.release()
+
+        return edges
+    }
+
+    fun findDocumentCorners(edges: Mat, width: Int, height: Int): List<Point> {
+        val contours = mutableListOf<MatOfPoint>()
+        val hierarchy = Mat()
+
+        Imgproc.findContours(edges.clone(), contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+
+        hierarchy.release()
+
+        if (contours.isEmpty()) {
+            return emptyList()
+        }
+
+        val maxContour = contours.maxByOrNull { Imgproc.contourArea(it) } ?: return emptyList()
+
+        val contourArea = Imgproc.contourArea(maxContour)
+        val imageArea = width * height.toDouble()
+
+        if (contourArea < imageArea * 0.1) {
+            return emptyList()
+        }
+
+        val epsilon = 0.02 * Imgproc.arcLength(maxContour, true)
+        val approx = MatOfPoint2f()
+        maxContour.convertTo(approx, org.opencv.core.CvType.CV_32F)
+        Imgproc.approxPolyDP(approx, approx, epsilon, true)
+
+        val approxPoints = approx.toArray()
+        approx.release()
+        maxContour.release()
+
+        if (approxPoints.size == 4) {
+            return orderPoints(approxPoints.toList())
+        }
+
+        return emptyList()
+    }
+
     fun cropRectangle(bitmap: Bitmap, cropRect: android.graphics.Rect): Bitmap {
         val x = maxOf(0, cropRect.left)
         val y = maxOf(0, cropRect.top)

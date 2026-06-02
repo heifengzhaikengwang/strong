@@ -2,8 +2,10 @@ package com.paperscanner.app.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.PointF
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -22,8 +24,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.paperscanner.app.R
 import com.paperscanner.app.databinding.ActivityScannerBinding
+import com.paperscanner.app.scanner.ImageProcessor
 import com.paperscanner.app.util.ScannerDataManager
 import com.paperscanner.app.viewmodel.ScanViewModel
+import org.opencv.android.Utils
+import org.opencv.core.Mat
+import org.opencv.core.Point
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -41,7 +50,7 @@ class ScannerActivity : AppCompatActivity() {
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            Toast.makeText(this, "从相册选择需要先裁剪，暂不支持", Toast.LENGTH_SHORT).show()
+            processGalleryImage(it)
         }
     }
 
@@ -268,6 +277,54 @@ class ScannerActivity : AppCompatActivity() {
                 showExitConfirmDialog()
             }
         })
+    }
+
+    private fun processGalleryImage(uri: Uri) {
+        binding.btnCapture.isEnabled = false
+
+        try {
+            val inputStream: InputStream? = contentResolver.openInputStream(uri)
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            
+            if (bitmap != null) {
+                viewModel.viewModelScope.launch {
+                    val processedBitmap = withContext(Dispatchers.Default) {
+                        val src = Mat()
+                        Utils.bitmapToMat(bitmap, src)
+                        
+                        val edges = ImageProcessor.detectEdges(src)
+                        val corners = ImageProcessor.findDocumentCorners(edges, src.width(), src.height())
+                        
+                        val finalBitmap = if (corners.size == 4) {
+                            ImageProcessor.cropAndEnhance(bitmap, corners)
+                        } else {
+                            ImageProcessor.enhanceDocument(src)
+                            val outputBitmap = Bitmap.createBitmap(src.cols(), src.rows(), Bitmap.Config.ARGB_8888)
+                            Utils.matToBitmap(src, outputBitmap)
+                            outputBitmap
+                        }
+                        
+                        src.release()
+                        edges.release()
+                        finalBitmap
+                    }
+                    
+                    dataManager.addImage(processedBitmap)
+                    
+                    runOnUiThread {
+                        updateUI()
+                        binding.btnCapture.isEnabled = true
+                        Toast.makeText(this@ScannerActivity, "导入成功", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                binding.btnCapture.isEnabled = true
+                Toast.makeText(this, "无法读取图片", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            binding.btnCapture.isEnabled = true
+            Toast.makeText(this, "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroy() {
