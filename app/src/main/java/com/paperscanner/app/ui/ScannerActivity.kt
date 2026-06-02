@@ -30,8 +30,6 @@ import com.paperscanner.app.viewmodel.ScanViewModel
 import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Point
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -287,36 +285,20 @@ class ScannerActivity : AppCompatActivity() {
             val bitmap = BitmapFactory.decodeStream(inputStream)
             
             if (bitmap != null) {
-                viewModel.viewModelScope.launch {
-                    val processedBitmap = withContext(Dispatchers.Default) {
-                        val src = Mat()
-                        Utils.bitmapToMat(bitmap, src)
-                        
-                        val edges = ImageProcessor.detectEdges(src)
-                        val corners = ImageProcessor.findDocumentCorners(edges, src.width(), src.height())
-                        
-                        val finalBitmap = if (corners.size == 4) {
-                            ImageProcessor.cropAndEnhance(bitmap, corners)
-                        } else {
-                            ImageProcessor.enhanceDocument(src)
-                            val outputBitmap = Bitmap.createBitmap(src.cols(), src.rows(), Bitmap.Config.ARGB_8888)
-                            Utils.matToBitmap(src, outputBitmap)
-                            outputBitmap
-                        }
-                        
-                        src.release()
-                        edges.release()
-                        finalBitmap
-                    }
-                    
-                    dataManager.addImage(processedBitmap)
-                    
-                    runOnUiThread {
-                        updateUI()
-                        binding.btnCapture.isEnabled = true
-                        Toast.makeText(this@ScannerActivity, "导入成功", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                val src = Mat()
+                Utils.bitmapToMat(bitmap, src)
+                
+                val enhanced = ImageProcessor.enhanceDocument(src)
+                val outputBitmap = Bitmap.createBitmap(enhanced.cols(), enhanced.rows(), Bitmap.Config.ARGB_8888)
+                Utils.matToBitmap(enhanced, outputBitmap)
+                
+                src.release()
+                enhanced.release()
+                
+                dataManager.addImage(outputBitmap)
+                updateUI()
+                binding.btnCapture.isEnabled = true
+                Toast.makeText(this, "导入成功", Toast.LENGTH_SHORT).show()
             } else {
                 binding.btnCapture.isEnabled = true
                 Toast.makeText(this, "无法读取图片", Toast.LENGTH_SHORT).show()

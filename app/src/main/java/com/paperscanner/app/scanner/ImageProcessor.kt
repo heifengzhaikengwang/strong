@@ -2,12 +2,14 @@ package com.paperscanner.app.scanner
 
 import android.graphics.Bitmap
 import org.opencv.android.Utils
+import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.MatOfPoint2f
 import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
+import com.paperscanner.app.util.EnhanceParams
 import kotlin.math.sqrt
 
 object ImageProcessor {
@@ -228,10 +230,9 @@ object ImageProcessor {
             return emptyList()
         }
 
-        val epsilon = 0.02 * Imgproc.arcLength(maxContour, true)
+        val epsilon = 0.02 * Imgproc.arcLength(MatOfPoint2f(*maxContour.toArray()), true)
         val approx = MatOfPoint2f()
-        maxContour.convertTo(approx, org.opencv.core.CvType.CV_32F)
-        Imgproc.approxPolyDP(approx, approx, epsilon, true)
+        Imgproc.approxPolyDP(MatOfPoint2f(*maxContour.toArray()), approx, epsilon, true)
 
         val approxPoints = approx.toArray()
         approx.release()
