@@ -46,7 +46,7 @@ object ImageProcessor {
         return outputBitmap
     }
 
-    private fun cropQuadrilateral(src: Mat, points: List<Point>): Mat {
+    fun cropQuadrilateral(src: Mat, points: List<Point>): Mat {
         if (points.size != 4) {
             return src.clone()
         }
@@ -107,24 +107,32 @@ object ImageProcessor {
         val gray = Mat()
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
 
-        val (blurSize, sharpenCenter, sharpenSurround, blockSize, constant) = 
-            if (EnhanceParams.autoMode) {
-                val brightness = calculateBrightness(gray)
-                val contrast = calculateContrast(gray)
-                val noise = calculateNoise(gray)
-                val params = EnhanceParams.getAutoParams(brightness, contrast, noise)
-                arrayOf(params[0].toDouble(), params[1].toDouble(), params[2].toDouble(), 
-                        params[3].toInt(), params[4].toDouble())
-            } else {
-                arrayOf(EnhanceParams.blurSize.toDouble(), 
-                        EnhanceParams.sharpenCenter.toDouble(), 
-                        EnhanceParams.sharpenSurround.toDouble(),
-                        EnhanceParams.thresholdBlockSize, 
-                        EnhanceParams.thresholdConstant)
-            }
+        val blurSize: Int
+        val sharpenCenter: Double
+        val sharpenSurround: Double
+        val blockSize: Int
+        val constant: Double
+
+        if (EnhanceParams.autoMode) {
+            val brightness = calculateBrightness(gray)
+            val contrast = calculateContrast(gray)
+            val noise = calculateNoise(gray)
+            val autoParams = EnhanceParams.getAutoParams(brightness, contrast, noise)
+            blurSize = autoParams[0].toInt()
+            sharpenCenter = autoParams[1].toDouble()
+            sharpenSurround = autoParams[2].toDouble()
+            blockSize = autoParams[3].toInt()
+            constant = autoParams[4].toDouble()
+        } else {
+            blurSize = EnhanceParams.blurSize
+            sharpenCenter = EnhanceParams.sharpenCenter.toDouble()
+            sharpenSurround = EnhanceParams.sharpenSurround.toDouble()
+            blockSize = EnhanceParams.thresholdBlockSize
+            constant = EnhanceParams.thresholdConstant
+        }
 
         val blurred = Mat()
-        Imgproc.GaussianBlur(gray, blurred, Size(blurSize, blurSize), 0.0)
+        Imgproc.GaussianBlur(gray, blurred, Size(blurSize.toDouble(), blurSize.toDouble()), 0.0)
 
         val sharpenKernel = Mat(3, 3, org.opencv.core.CvType.CV_32F)
         sharpenKernel.put(0, 0,
@@ -158,7 +166,7 @@ object ImageProcessor {
     private fun calculateBrightness(src: Mat): Double {
         val mean = org.opencv.core.Mat()
         val std = org.opencv.core.Mat()
-        Imgproc.meanStdDev(src, mean, std)
+        Core.meanStdDev(src, mean, std)
         val brightness = mean.get(0, 0)[0] / 255.0
         mean.release()
         std.release()
@@ -168,7 +176,7 @@ object ImageProcessor {
     private fun calculateContrast(src: Mat): Double {
         val mean = org.opencv.core.Mat()
         val std = org.opencv.core.Mat()
-        Imgproc.meanStdDev(src, mean, std)
+        Core.meanStdDev(src, mean, std)
         val contrast = std.get(0, 0)[0] / 255.0
         mean.release()
         std.release()
@@ -180,7 +188,7 @@ object ImageProcessor {
         Imgproc.Laplacian(src, laplacian, org.opencv.core.CvType.CV_64F)
         val mean = org.opencv.core.Mat()
         val std = org.opencv.core.Mat()
-        Imgproc.meanStdDev(laplacian, mean, std)
+        Core.meanStdDev(laplacian, mean, std)
         val noise = std.get(0, 0)[0] / 100.0
         laplacian.release()
         mean.release()

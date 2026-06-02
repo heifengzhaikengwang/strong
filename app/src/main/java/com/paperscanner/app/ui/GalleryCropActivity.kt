@@ -8,12 +8,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.paperscanner.app.R
 import com.paperscanner.app.databinding.ActivityGalleryCropBinding
 import com.paperscanner.app.scanner.ImageProcessor
+import com.paperscanner.app.util.FileUtils
 import com.paperscanner.app.util.ScannerDataManager
 import org.opencv.android.Utils
 import org.opencv.core.Mat
@@ -103,7 +104,8 @@ class GalleryCropActivity : AppCompatActivity() {
             val src = Mat()
             Utils.bitmapToMat(bitmap, src)
 
-            val cropPoints = binding.cropOverlayView.getCropPoints()
+            val cropPointsF = binding.cropOverlayView.getCropPoints()
+            val cropPoints = FileUtils.pointFListToPoint(cropPointsF)
             val cropped = ImageProcessor.cropQuadrilateral(src, cropPoints)
             val enhanced = ImageProcessor.enhanceDocument(cropped)
 
@@ -135,7 +137,8 @@ class GalleryCropActivity : AppCompatActivity() {
     }
 
     private fun openPreview() {
-        PreviewActivity.start(this)
+        val intent = Intent(this, PreviewActivity::class.java)
+        startActivity(intent)
         finish()
     }
 }
