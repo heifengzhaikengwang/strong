@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.paperscanner.app.databinding.ActivitySettingsBinding
+import com.paperscanner.app.util.AutoModeLevel
 import com.paperscanner.app.util.EnhanceParams
 
 class SettingsActivity : AppCompatActivity() {
@@ -67,7 +68,7 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.sbThresholdConstant.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                binding.tvThresholdConstantValue.text = String.format("%.0f", progress.toFloat())
+                binding.tvThresholdConstantValue.text = String.format("%.0f", progress.toDouble())
             }
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -77,9 +78,9 @@ class SettingsActivity : AppCompatActivity() {
             updateAutoModeUI(isChecked)
         }
 
-        binding.btnLevelWeak.setOnClickListener { selectAutoLevel(EnhanceParams.AutoModeLevel.WEAK) }
-        binding.btnLevelNormal.setOnClickListener { selectAutoLevel(EnhanceParams.AutoModeLevel.NORMAL) }
-        binding.btnLevelStrong.setOnClickListener { selectAutoLevel(EnhanceParams.AutoModeLevel.STRONG) }
+        binding.btnLevelWeak.setOnClickListener { selectAutoLevel(AutoModeLevel.WEAK) }
+        binding.btnLevelNormal.setOnClickListener { selectAutoLevel(AutoModeLevel.NORMAL) }
+        binding.btnLevelStrong.setOnClickListener { selectAutoLevel(AutoModeLevel.STRONG) }
 
         binding.btnReset.setOnClickListener {
             EnhanceParams.resetToDefault()
@@ -116,20 +117,20 @@ class SettingsActivity : AppCompatActivity() {
         binding.layoutManualParams.visibility = if (isAuto) android.view.View.GONE else android.view.View.VISIBLE
     }
 
-    private fun selectAutoLevel(level: EnhanceParams.AutoModeLevel) {
+    private fun selectAutoLevel(level: AutoModeLevel) {
         EnhanceParams.autoModeLevel = level
         
         val primaryColor = 0xFFFFFFFF.toInt()
         val textColor = 0xFF000000.toInt()
         
-        binding.btnLevelWeak.setTextColor(if (level == EnhanceParams.AutoModeLevel.WEAK) primaryColor else textColor)
-        binding.btnLevelWeak.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.WEAK) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
+        binding.btnLevelWeak.setTextColor(if (level == AutoModeLevel.WEAK) primaryColor else textColor)
+        binding.btnLevelWeak.setBackgroundResource(if (level == AutoModeLevel.WEAK) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
         
-        binding.btnLevelNormal.setTextColor(if (level == EnhanceParams.AutoModeLevel.NORMAL) primaryColor else textColor)
-        binding.btnLevelNormal.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.NORMAL) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
+        binding.btnLevelNormal.setTextColor(if (level == AutoModeLevel.NORMAL) primaryColor else textColor)
+        binding.btnLevelNormal.setBackgroundResource(if (level == AutoModeLevel.NORMAL) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
         
-        binding.btnLevelStrong.setTextColor(if (level == EnhanceParams.AutoModeLevel.STRONG) primaryColor else textColor)
-        binding.btnLevelStrong.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.STRONG) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
+        binding.btnLevelStrong.setTextColor(if (level == AutoModeLevel.STRONG) primaryColor else textColor)
+        binding.btnLevelStrong.setBackgroundResource(if (level == AutoModeLevel.STRONG) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
     }
 
     private fun saveParams() {
@@ -140,7 +141,7 @@ class SettingsActivity : AppCompatActivity() {
             EnhanceParams.sharpenCenter = binding.sbSharpenCenter.progress / 10.0f
             EnhanceParams.sharpenSurround = -(binding.sbSharpenSurround.progress / 10.0f)
             EnhanceParams.thresholdBlockSize = binding.sbThresholdBlock.progress
-            EnhanceParams.thresholdConstant = binding.sbThresholdConstant.progress.toFloat()
+            EnhanceParams.thresholdConstant = binding.sbThresholdConstant.progress.toDouble()
         }
         
         Toast.makeText(this, "保存成功", Toast.LENGTH_SHORT).show()
