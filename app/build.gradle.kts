@@ -20,7 +20,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -29,6 +30,10 @@ android {
         debug {
             isMinifyEnabled = false
         }
+    }
+
+    ndk {
+        abiFilters += setOf("armeabi-v7a", "arm64-v8a")
     }
 
     compileOptions {
