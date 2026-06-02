@@ -41,12 +41,12 @@ class PreviewActivity : AppCompatActivity() {
         setupRecyclerView()
         observeViewModel()
         setupBackHandler()
-        
-        // Update adapter initially
+
+        val images = dataManager.getImages()
+
         previewAdapter.submitList(images.toList())
         previewAdapter.setTotalCount(images.size)
-        
-        // Show first image as preview
+
         if (images.isNotEmpty()) {
             updateMainPreview(0)
         }
