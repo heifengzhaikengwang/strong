@@ -38,6 +38,18 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/white" />
 
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_circle_semi_transparent"
+        android:contentDescription="设置"
+        android:src="@drawable/ic_settings"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/white" />
+
     <TextView
         android:id="@+id/tvHint"
         android:layout_width="wrap_content"

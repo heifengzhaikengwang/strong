@@ -70,6 +70,10 @@ class ScannerActivity : AppCompatActivity() {
             showExitConfirmDialog()
         }
 
+        binding.btnSettings.setOnClickListener {
+            openSettings()
+        }
+
         binding.btnCapture.setOnClickListener {
             takePhoto()
         }
@@ -89,6 +93,11 @@ class ScannerActivity : AppCompatActivity() {
         }
         
         updateUI()
+    }
+
+    private fun openSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
     }
 
     private fun updateUI() {
