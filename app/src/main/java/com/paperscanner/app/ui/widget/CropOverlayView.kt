@@ -74,8 +74,8 @@ class CropOverlayView @JvmOverloads constructor(
     private fun initDefaultCorners() {
         corners.clear()
 
-        val paddingH = width * 0.1f
-        val paddingV = height * 0.15f
+        val paddingH = width * 0.25f
+        val paddingV = height * 0.3f
 
         val availableWidth = width - 2 * paddingH
         val availableHeight = availableWidth / A4_RATIO

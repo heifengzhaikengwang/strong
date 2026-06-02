@@ -43,7 +43,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addCapturedImage(bitmap: Bitmap, cropPoints: List<PointF>) {
+    fun addCapturedImage(bitmap: Bitmap, cropPoints: List<PointF>, onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             _currentProcessing.value = true
 
@@ -61,6 +61,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             dataManager.addImage(processedBitmap)
 
             _currentProcessing.value = false
+            
+            onComplete?.invoke()
         }
     }
 

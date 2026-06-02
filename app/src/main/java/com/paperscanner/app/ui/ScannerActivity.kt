@@ -48,7 +48,7 @@ class ScannerActivity : AppCompatActivity() {
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            processGalleryImage(it)
+            GalleryCropActivity.start(this, it)
         }
     }
 
@@ -189,12 +189,12 @@ class ScannerActivity : AppCompatActivity() {
             previewHeight.toFloat()
         )
 
-        viewModel.addCapturedImage(scaledBitmap, scaledCropPoints)
-
-        runOnUiThread {
-            updateUI()
-            binding.btnCapture.isEnabled = true
-            Toast.makeText(this, "拍照成功", Toast.LENGTH_SHORT).show()
+        viewModel.addCapturedImage(scaledBitmap, scaledCropPoints) {
+            runOnUiThread {
+                updateUI()
+                binding.btnCapture.isEnabled = true
+                Toast.makeText(this, "拍照成功", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
