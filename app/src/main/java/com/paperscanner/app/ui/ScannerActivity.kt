@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -102,28 +101,28 @@ class ScannerActivity : AppCompatActivity() {
             toggleRealTimePreview()
         }
 
-        binding.seekBarBlur.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        binding.seekBarBlur.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 updatePreviewParams()
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
         })
 
-        binding.seekBarSharpen.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        binding.seekBarSharpen.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 updatePreviewParams()
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
         })
 
-        binding.seekBarThreshold.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        binding.seekBarThreshold.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 updatePreviewParams()
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
         })
 
         binding.btnResetParams.setOnClickListener {
@@ -146,7 +145,7 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun updatePreviewParams() {
         val blurSize = binding.seekBarBlur.progress.toFloat()
-        val sharpenCenter = (binding.seekBarSharpen.progress / 20f) - 1f
+        val sharpenCenter = (binding.seekBarSharpen.progress / 20.0f) - 1.0f
         val sharpenSurround = -0.5f
         val blockSize = 15f
         val thresholdConstant = binding.seekBarThreshold.progress.toFloat()
@@ -174,6 +173,7 @@ class ScannerActivity : AppCompatActivity() {
         if (isRealTimePreview) {
             binding.btnTogglePreview.setImageResource(R.drawable.ic_camera)
             binding.paramsPanel.visibility = View.VISIBLE
+            binding.ivPreviewOverlay.visibility = View.VISIBLE
             Toast.makeText(this, "已开启实时预览", Toast.LENGTH_SHORT).show()
         } else {
             binding.btnTogglePreview.setImageResource(R.drawable.ic_preview)
@@ -275,7 +275,6 @@ class ScannerActivity : AppCompatActivity() {
 
             runOnUiThread {
                 binding.ivPreviewOverlay.setImageBitmap(outputBitmap)
-                binding.ivPreviewOverlay.visibility = View.VISIBLE
             }
         } catch (e: Exception) {
             Log.e(TAG, "Frame processing failed", e)
@@ -344,7 +343,7 @@ class ScannerActivity : AppCompatActivity() {
         val bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
 
-        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         val matrix = Matrix()
         matrix.postRotate(image.imageInfo.rotationDegrees.toFloat())
 

@@ -11,7 +11,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import com.paperscanner.app.R
-import kotlin.math.hypot
 
 class CropOverlayView @JvmOverloads constructor(
     context: Context,
@@ -19,248 +18,39 @@ class CropOverlayView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    companion object {
-        private const val A4_RATIO = 210f / 297f
-        private const val CORNER_RADIUS = 24f
-        private const val BORDER_WIDTH = 3f
-        private const val TOUCH_TOLERANCE = 48f
-        private const val MIN_SIZE_RATIO = 0.2f
-    }
-
-    private val overlayPaint = Paint().apply {
-        color = Color.parseColor("#80000000")
-        style = Paint.Style.FILL
-    }
-
-    private val borderPaint = Paint().apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = BORDER_WIDTH
-        isAntiAlias = true
-    }
-
-    private val cornerPaint = Paint().apply {
-        color = Color.parseColor("#FF5722")
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
-
-    private val gridPaint = Paint().apply {
-        color = Color.parseColor("#80FFFFFF")
-        style = Paint.Style.STROKE
-        strokeWidth = 1f
-        isAntiAlias = true
-    }
-
-    private var corners = mutableListOf<PointF>()
-    private var activeCornerIndex = -1
-
-    private val path = Path()
-    private var cropRect = RectF()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val corners = mutableListOf<PointF>()
+    private val cornerRadius = 24f
+    private val cornerTouchRadius = 48f
+    private var draggedCornerIndex = -1
+    private val minSizeRatio = 0.2f
 
     var onCornersChanged: ((List<PointF>) -> Unit)? = null
 
     init {
-        setWillNotDraw(false)
-    }
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 3f
+        paint.color = Color.WHITE
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        if (corners.isEmpty()) {
-            initDefaultCorners()
-        }
+        initDefaultCorners()
     }
 
     private fun initDefaultCorners() {
-        corners.clear()
-
-        val paddingH = width * 0.25f
-        val paddingV = height * 0.3f
-
-        val availableWidth = width - 2 * paddingH
-        val availableHeight = availableWidth / A4_RATIO
-
-        val left = paddingH
-        val top = (height - availableHeight) / 2
-
-        corners.add(PointF(left, top))
-        corners.add(PointF(left + availableWidth, top))
-        corners.add(PointF(left + availableWidth, top + availableHeight))
-        corners.add(PointF(left, top + availableHeight))
-
-        updateCropRect()
-        onCornersChanged?.invoke(corners.toList())
-    }
-
-    private fun updateCropRect() {
-        if (corners.size != 4) return
-
-        val xs = corners.map { it.x }
-        val ys = corners.map { it.y }
-
-        cropRect.set(
-            xs.minOrNull() ?: 0f,
-            ys.minOrNull() ?: 0f,
-            xs.maxOrNull() ?: 0f,
-            ys.maxOrNull() ?: 0f
-        )
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        if (corners.size != 4) return
-
-        path.reset()
-        path.moveTo(corners[0].x, corners[0].y)
-        for (i in 1 until corners.size) {
-            path.lineTo(corners[i].x, corners[i].y)
-        }
-        path.close()
-
-        val overlayPath = Path()
-        overlayPath.addRect(0f, 0f, width.toFloat(), height.toFloat(), Path.Direction.CW)
-        overlayPath.op(path, Path.Op.DIFFERENCE)
-
-        canvas.drawPath(overlayPath, overlayPaint)
-
-        canvas.drawPath(path, borderPaint)
-
-        drawGrid(canvas)
-
-        for (i in corners.indices) {
-            val corner = corners[i]
-            val isActive = i == activeCornerIndex
-            val radius = if (isActive) CORNER_RADIUS * 1.2f else CORNER_RADIUS
-            cornerPaint.color = if (isActive) Color.parseColor("#FF7043") else Color.parseColor("#FF5722")
-            canvas.drawCircle(corner.x, corner.y, radius, cornerPaint)
-        }
-    }
-
-    private fun drawGrid(canvas: Canvas) {
-        if (corners.size != 4) return
-
-        val top = corners[0]
-        val bottom = corners[3]
-
-        for (i in 1..3) {
-            val ratio = i / 4f
-            val leftX = top.x + (corners[1].x - top.x) * ratio
-            val leftY = top.y + (corners[1].y - top.y) * ratio
-            val rightX = bottom.x + (corners[2].x - bottom.x) * ratio
-            val rightY = bottom.y + (corners[2].y - bottom.y) * ratio
-
-            canvas.drawLine(leftX, leftY, rightX, rightY, gridPaint)
-        }
-
-        for (i in 1..3) {
-            val ratio = i / 4f
-            val topX = top.x + (bottom.x - top.x) * ratio
-            val topY = top.y + (bottom.y - top.y) * ratio
-            val bottomX = corners[1].x + (corners[2].x - corners[1].x) * ratio
-            val bottomY = corners[1].y + (corners[2].y - corners[1].y) * ratio
-
-            canvas.drawLine(topX, topY, bottomX, bottomY, gridPaint)
-        }
-    }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                activeCornerIndex = findNearestCorner(event.x, event.y)
-                if (activeCornerIndex >= 0) {
-                    return true
-                }
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (activeCornerIndex >= 0) {
-                    val newX = event.x.coerceIn(0f, width.toFloat())
-                    val newY = event.y.coerceIn(0f, height.toFloat())
-
-                    adjustAdjacentCorners(activeCornerIndex, newX, newY)
-
-                    corners[activeCornerIndex].x = newX
-                    corners[activeCornerIndex].y = newY
-
-                    invalidate()
-                    return true
-                }
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                if (activeCornerIndex >= 0) {
-                    activeCornerIndex = -1
-                    updateCropRect()
-                    onCornersChanged?.invoke(corners.toList())
-                    invalidate()
-                    return true
-                }
-            }
-        }
-
-        return super.onTouchEvent(event)
-    }
-
-    private fun findNearestCorner(x: Float, y: Float): Int {
-        var nearestIndex = -1
-        var nearestDist = TOUCH_TOLERANCE
-
-        for (i in corners.indices) {
-            val dist = hypot(x - corners[i].x, y - corners[i].y)
-            if (dist < nearestDist) {
-                nearestDist = dist
-                nearestIndex = i
-            }
-        }
-
-        return nearestIndex
-    }
-
-    private fun adjustAdjacentCorners(index: Int, newX: Float, newY: Float) {
-        val minWidth = width * MIN_SIZE_RATIO
-        val minHeight = height * MIN_SIZE_RATIO
-
-        val currentWidth = corners[1].x - corners[0].x
-        val currentHeight = corners[2].y - corners[1].y
-
-        when (index) {
-            0 -> {
-                val newWidth = newX.coerceIn(minWidth, width - minWidth)
-                val newHeight = newY.coerceIn(minHeight, height - minHeight)
-                corners[0].x = newWidth
-                corners[0].y = newHeight
-                corners[1].y = newHeight
-                corners[3].x = newWidth
-                corners[2].x = newWidth
-                corners[2].y = newHeight
-            }
-            1 -> {
-                val newWidth = newX.coerceIn(minWidth, width - minWidth)
-                val newHeight = newY.coerceIn(minHeight, height - minHeight)
-                corners[1].x = newWidth
-                corners[1].y = newHeight
-                corners[0].y = newHeight
-                corners[2].y = newHeight
-                corners[3].x = corners[0].x
-            }
-            2 -> {
-                val newWidth = newX.coerceIn(minWidth, width - minWidth)
-                val newHeight = newY.coerceIn(minHeight, height - minHeight)
-                corners[2].x = newWidth
-                corners[2].y = newHeight
-                corners[1].x = newWidth
-                corners[3].y = newHeight
-                corners[0].x = corners[3].x
-            }
-            3 -> {
-                val newWidth = newX.coerceIn(minWidth, width - minWidth)
-                val newHeight = newY.coerceIn(minHeight, height - minHeight)
-                corners[3].x = newWidth
-                corners[3].y = newHeight
-                corners[2].y = newHeight
-                corners[0].x = newWidth
-                corners[1].x = newWidth
+        post {
+            val width = width.toFloat()
+            val height = height.toFloat()
+            
+            if (width > 0 && height > 0) {
+                val horizontalPadding = width * 0.25f
+                val verticalPadding = height * 0.3f
+                
+                corners.clear()
+                corners.add(PointF(horizontalPadding, verticalPadding))
+                corners.add(PointF(width - horizontalPadding, verticalPadding))
+                corners.add(PointF(width - horizontalPadding, height - verticalPadding))
+                corners.add(PointF(horizontalPadding, height - verticalPadding))
+                
+                invalidate()
             }
         }
     }
@@ -269,22 +59,131 @@ class CropOverlayView @JvmOverloads constructor(
         return corners.toList()
     }
 
-    fun getCropRect(): RectF {
-        return RectF(cropRect)
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        
+        if (corners.size < 4) return
+
+        val overlayPath = Path()
+        overlayPath.addRect(0f, 0f, width.toFloat(), height.toFloat(), Path.Direction.CW)
+        
+        val cropPath = Path()
+        cropPath.moveTo(corners[0].x, corners[0].y)
+        cropPath.lineTo(corners[1].x, corners[1].y)
+        cropPath.lineTo(corners[2].x, corners[2].y)
+        cropPath.lineTo(corners[3].x, corners[3].y)
+        cropPath.close()
+        
+        overlayPath.op(cropPath, Path.Op.DIFFERENCE)
+        
+        paint.style = Paint.Style.FILL
+        paint.color = Color.parseColor("#80000000")
+        canvas.drawPath(overlayPath, paint)
+        
+        paint.style = Paint.Style.STROKE
+        paint.color = Color.WHITE
+        paint.strokeWidth = 3f
+        canvas.drawPath(cropPath, paint)
+        
+        paint.style = Paint.Style.FILL
+        paint.color = Color.parseColor("#FF5722")
+        for (corner in corners) {
+            canvas.drawCircle(corner.x, corner.y, cornerRadius, paint)
+        }
     }
 
-    fun resetToDefault() {
-        initDefaultCorners()
-        invalidate()
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                draggedCornerIndex = findTouchedCorner(event.x, event.y)
+                return draggedCornerIndex != -1
+            }
+            
+            MotionEvent.ACTION_MOVE -> {
+                if (draggedCornerIndex != -1) {
+                    updateCorner(draggedCornerIndex, event.x, event.y)
+                    invalidate()
+                    onCornersChanged?.invoke(getCropPoints())
+                }
+                return true
+            }
+            
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                draggedCornerIndex = -1
+                return true
+            }
+        }
+        return super.onTouchEvent(event)
     }
 
-    fun setCropRect(rect: RectF) {
-        corners.clear()
-        corners.add(PointF(rect.left, rect.top))
-        corners.add(PointF(rect.right, rect.top))
-        corners.add(PointF(rect.right, rect.bottom))
-        corners.add(PointF(rect.left, rect.bottom))
-        updateCropRect()
-        invalidate()
+    private fun findTouchedCorner(x: Float, y: Float): Int {
+        for (i in corners.indices) {
+            val dx = corners[i].x - x
+            val dy = corners[i].y - y
+            if (dx * dx + dy * dy <= cornerTouchRadius * cornerTouchRadius) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    private fun updateCorner(index: Int, newX: Float, newY: Float) {
+        val minX = width * minSizeRatio
+        val minY = height * minSizeRatio
+        val maxX = width - minX
+        val maxY = height - minY
+        
+        val clampedX = newX.coerceIn(minX, maxX)
+        val clampedY = newY.coerceIn(minY, maxY)
+        
+        when (index) {
+            0 -> {
+                corners[0].x = clampedX
+                corners[0].y = clampedY
+                corners[1].y = clampedY
+                corners[3].x = clampedX
+            }
+            1 -> {
+                corners[1].x = clampedX
+                corners[1].y = clampedY
+                corners[0].y = clampedY
+                corners[2].x = clampedX
+            }
+            2 -> {
+                corners[2].x = clampedX
+                corners[2].y = clampedY
+                corners[1].x = clampedX
+                corners[3].y = clampedY
+            }
+            3 -> {
+                corners[3].x = clampedX
+                corners[3].y = clampedY
+                corners[0].x = clampedX
+                corners[2].y = clampedY
+            }
+        }
+        
+        ensureValidCorners()
+    }
+
+    private fun ensureValidCorners() {
+        val minX = width * minSizeRatio
+        val minY = height * minSizeRatio
+        val maxX = width - minX
+        val maxY = height - minY
+        
+        val left = corners[0].x.coerceAtLeast(minX)
+        val top = corners[0].y.coerceAtLeast(minY)
+        val right = corners[2].x.coerceAtMost(maxX)
+        val bottom = corners[2].y.coerceAtMost(maxY)
+        
+        if (right - left < width * 0.1f || bottom - top < height * 0.1f) {
+            return
+        }
+        
+        corners[0].set(left, top)
+        corners[1].set(right, top)
+        corners[2].set(right, bottom)
+        corners[3].set(left, bottom)
     }
 }
