@@ -182,9 +182,7 @@ class ScannerActivity : AppCompatActivity() {
             previewHeight.toFloat()
         )
 
-        viewModel.viewModelScope.launch {
-            viewModel.addCapturedImage(scaledBitmap, scaledCropPoints)
-        }
+        viewModel.addCapturedImage(scaledBitmap, scaledCropPoints)
 
         runOnUiThread {
             updateUI()

@@ -37,11 +37,6 @@ class PreviewActivity : AppCompatActivity() {
         binding = ActivityPreviewBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize ViewModel with data from manager
-        val images = dataManager.getImages()
-        viewModel._capturedImages.value = images.toMutableList()
-        viewModel._pageCount.value = images.size
-
         setupUI()
         setupRecyclerView()
         observeViewModel()
