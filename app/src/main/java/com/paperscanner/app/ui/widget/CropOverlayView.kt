@@ -218,53 +218,49 @@ class CropOverlayView @JvmOverloads constructor(
     }
 
     private fun adjustAdjacentCorners(index: Int, newX: Float, newY: Float) {
-        val oppositeIndex = (index + 2) % 4
-
-        val opposite = corners[oppositeIndex]
         val minWidth = width * MIN_SIZE_RATIO
         val minHeight = height * MIN_SIZE_RATIO
 
-        when (index) {
-            0, 1 -> {
-                val bottomY = corners[(index + 2) % 4].y
-                val newHeight = bottomY - newY
-                if (newHeight < minHeight) {
-                    corners[index].y = bottomY - minHeight
-                } else {
-                    corners[index].y = newY
-                }
-            }
-
-            2, 3 -> {
-                val topY = corners[(index + 2) % 4].y
-                val newHeight = newY - topY
-                if (newHeight < minHeight) {
-                    corners[index].y = topY + minHeight
-                } else {
-                    corners[index].y = newY
-                }
-            }
-        }
+        val currentWidth = corners[1].x - corners[0].x
+        val currentHeight = corners[2].y - corners[1].y
 
         when (index) {
-            0, 3 -> {
-                val rightX = corners[(index + 1) % 4].x
-                val newWidth = rightX - newX
-                if (newWidth < minWidth) {
-                    corners[index].x = rightX - minWidth
-                } else {
-                    corners[index].x = newX
-                }
+            0 -> {
+                val newWidth = newX.coerceIn(minWidth, width - minWidth)
+                val newHeight = newY.coerceIn(minHeight, height - minHeight)
+                corners[0].x = newWidth
+                corners[0].y = newHeight
+                corners[1].y = newHeight
+                corners[3].x = newWidth
+                corners[2].x = newWidth
+                corners[2].y = newHeight
             }
-
-            1, 2 -> {
-                val leftX = corners[(index + 3) % 4].x
-                val newWidth = newX - leftX
-                if (newWidth < minWidth) {
-                    corners[index].x = leftX + minWidth
-                } else {
-                    corners[index].x = newX
-                }
+            1 -> {
+                val newWidth = newX.coerceIn(minWidth, width - minWidth)
+                val newHeight = newY.coerceIn(minHeight, height - minHeight)
+                corners[1].x = newWidth
+                corners[1].y = newHeight
+                corners[0].y = newHeight
+                corners[2].y = newHeight
+                corners[3].x = corners[0].x
+            }
+            2 -> {
+                val newWidth = newX.coerceIn(minWidth, width - minWidth)
+                val newHeight = newY.coerceIn(minHeight, height - minHeight)
+                corners[2].x = newWidth
+                corners[2].y = newHeight
+                corners[1].x = newWidth
+                corners[3].y = newHeight
+                corners[0].x = corners[3].x
+            }
+            3 -> {
+                val newWidth = newX.coerceIn(minWidth, width - minWidth)
+                val newHeight = newY.coerceIn(minHeight, height - minHeight)
+                corners[3].x = newWidth
+                corners[3].y = newHeight
+                corners[2].y = newHeight
+                corners[0].x = newWidth
+                corners[1].x = newWidth
             }
         }
     }

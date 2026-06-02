@@ -37,9 +37,15 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        initViews()
-        setupListeners()
-        loadCurrentParams()
+        try {
+            initViews()
+            setupListeners()
+            loadCurrentParams()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "设置页面加载失败: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
+        }
     }
 
     private fun initViews() {

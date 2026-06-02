@@ -41,15 +41,28 @@ class GalleryCropActivity : AppCompatActivity() {
         binding = ActivityGalleryCropBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val uri = intent.getParcelableExtra<Uri>(EXTRA_IMAGE_URI)
-        if (uri == null) {
-            finish()
-            return
-        }
+        try {
+            val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(EXTRA_IMAGE_URI, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(EXTRA_IMAGE_URI)
+            }
+            
+            if (uri == null) {
+                Toast.makeText(this, "无法获取图片", Toast.LENGTH_SHORT).show()
+                finish()
+                return
+            }
 
-        loadImage(uri)
-        setupUI()
-        updateUI()
+            loadImage(uri)
+            setupUI()
+            updateUI()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            finish()
+        }
     }
 
     private fun loadImage(uri: Uri) {
