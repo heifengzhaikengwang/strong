@@ -16,6 +16,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        ndk {
+            abiFilters += setOf("arm64-v8a")
+        }
     }
 
     buildTypes {
@@ -30,10 +34,6 @@ android {
         debug {
             isMinifyEnabled = false
         }
-    }
-
-    ndk {
-        abiFilters += setOf("armeabi-v7a", "arm64-v8a")
     }
 
     compileOptions {
