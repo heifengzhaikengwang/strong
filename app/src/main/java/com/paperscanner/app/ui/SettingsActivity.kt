@@ -2,14 +2,24 @@ package com.paperscanner.app.ui
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.paperscanner.app.R
+import com.paperscanner.app.util.AutoModeLevel
 import com.paperscanner.app.util.EnhanceParams
 
 class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var switchAutoMode: Switch
+    private lateinit var layoutAutoLevel: View
+    private lateinit var layoutManualParams: View
+    private lateinit var btnLevelWeak: Button
+    private lateinit var btnLevelNormal: Button
+    private lateinit var btnLevelStrong: Button
 
     private lateinit var sbBlurSize: SeekBar
     private lateinit var sbSharpenCenter: SeekBar
@@ -33,6 +43,13 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        switchAutoMode = findViewById(R.id.switchAutoMode)
+        layoutAutoLevel = findViewById(R.id.layoutAutoLevel)
+        layoutManualParams = findViewById(R.id.layoutManualParams)
+        btnLevelWeak = findViewById(R.id.btnLevelWeak)
+        btnLevelNormal = findViewById(R.id.btnLevelNormal)
+        btnLevelStrong = findViewById(R.id.btnLevelStrong)
+
         sbBlurSize = findViewById(R.id.sbBlurSize)
         sbSharpenCenter = findViewById(R.id.sbSharpenCenter)
         sbSharpenSurround = findViewById(R.id.sbSharpenSurround)
@@ -59,6 +76,22 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        switchAutoMode.setOnCheckedChangeListener { _, isChecked ->
+            updateUIForAutoMode(isChecked)
+        }
+
+        btnLevelWeak.setOnClickListener {
+            selectLevel(AutoModeLevel.WEAK)
+        }
+
+        btnLevelNormal.setOnClickListener {
+            selectLevel(AutoModeLevel.NORMAL)
+        }
+
+        btnLevelStrong.setOnClickListener {
+            selectLevel(AutoModeLevel.STRONG)
+        }
+
         sbBlurSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvBlurValue.text = progress.toString()
@@ -102,7 +135,43 @@ class SettingsActivity : AppCompatActivity() {
         })
     }
 
+    private fun updateUIForAutoMode(isAutoMode: Boolean) {
+        layoutAutoLevel.visibility = if (isAutoMode) View.VISIBLE else View.GONE
+        layoutManualParams.visibility = if (isAutoMode) View.GONE else View.VISIBLE
+    }
+
+    private fun selectLevel(level: AutoModeLevel) {
+        btnLevelWeak.setBackgroundResource(R.drawable.btn_gray_bg)
+        btnLevelWeak.setTextColor(resources.getColor(R.color.black))
+        btnLevelNormal.setBackgroundResource(R.drawable.btn_gray_bg)
+        btnLevelNormal.setTextColor(resources.getColor(R.color.black))
+        btnLevelStrong.setBackgroundResource(R.drawable.btn_gray_bg)
+        btnLevelStrong.setTextColor(resources.getColor(R.color.black))
+
+        when (level) {
+            AutoModeLevel.WEAK -> {
+                btnLevelWeak.setBackgroundColor(resources.getColor(R.color.primary))
+                btnLevelWeak.setTextColor(resources.getColor(R.color.white))
+            }
+            AutoModeLevel.NORMAL -> {
+                btnLevelNormal.setBackgroundColor(resources.getColor(R.color.primary))
+                btnLevelNormal.setTextColor(resources.getColor(R.color.white))
+            }
+            AutoModeLevel.STRONG -> {
+                btnLevelStrong.setBackgroundColor(resources.getColor(R.color.primary))
+                btnLevelStrong.setTextColor(resources.getColor(R.color.white))
+            }
+        }
+
+        EnhanceParams.autoModeLevel = level
+    }
+
     private fun loadCurrentParams() {
+        switchAutoMode.isChecked = EnhanceParams.autoMode
+        updateUIForAutoMode(EnhanceParams.autoMode)
+
+        selectLevel(EnhanceParams.autoModeLevel)
+
         sbBlurSize.progress = EnhanceParams.blurSize
         tvBlurValue.text = EnhanceParams.blurSize.toString()
 
@@ -126,11 +195,15 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveParams() {
-        EnhanceParams.blurSize = sbBlurSize.progress
-        EnhanceParams.sharpenCenter = (sbSharpenCenter.progress / 10.0f)
-        EnhanceParams.sharpenSurround = -(sbSharpenSurround.progress / 10.0f)
-        EnhanceParams.thresholdBlockSize = sbThresholdBlock.progress
-        EnhanceParams.thresholdConstant = sbThresholdConstant.progress.toDouble()
+        EnhanceParams.autoMode = switchAutoMode.isChecked
+
+        if (!EnhanceParams.autoMode) {
+            EnhanceParams.blurSize = sbBlurSize.progress
+            EnhanceParams.sharpenCenter = (sbSharpenCenter.progress / 10.0f)
+            EnhanceParams.sharpenSurround = -(sbSharpenSurround.progress / 10.0f)
+            EnhanceParams.thresholdBlockSize = sbThresholdBlock.progress
+            EnhanceParams.thresholdConstant = sbThresholdConstant.progress.toDouble()
+        }
 
         Toast.makeText(this, "参数已保存", Toast.LENGTH_SHORT).show()
         finish()

@@ -105,17 +105,30 @@ object ImageProcessor {
         val gray = Mat()
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
 
-        val blurSize = EnhanceParams.blurSize.toDouble()
+        val (blurSize, sharpenCenter, sharpenSurround, blockSize, constant) = 
+            if (EnhanceParams.autoMode) {
+                val brightness = calculateBrightness(gray)
+                val contrast = calculateContrast(gray)
+                val noise = calculateNoise(gray)
+                val params = EnhanceParams.getAutoParams(brightness, contrast, noise)
+                arrayOf(params[0].toDouble(), params[1].toDouble(), params[2].toDouble(), 
+                        params[3].toInt(), params[4].toDouble())
+            } else {
+                arrayOf(EnhanceParams.blurSize.toDouble(), 
+                        EnhanceParams.sharpenCenter.toDouble(), 
+                        EnhanceParams.sharpenSurround.toDouble(),
+                        EnhanceParams.thresholdBlockSize, 
+                        EnhanceParams.thresholdConstant)
+            }
+
         val blurred = Mat()
         Imgproc.GaussianBlur(gray, blurred, Size(blurSize, blurSize), 0.0)
 
         val sharpenKernel = Mat(3, 3, org.opencv.core.CvType.CV_32F)
-        val center = EnhanceParams.sharpenCenter.toDouble()
-        val surround = EnhanceParams.sharpenSurround.toDouble()
         sharpenKernel.put(0, 0,
-            0.0, surround, 0.0,
-            surround, center, surround,
-            0.0, surround, 0.0
+            0.0, sharpenSurround, 0.0,
+            sharpenSurround, sharpenCenter, sharpenSurround,
+            0.0, sharpenSurround, 0.0
         )
 
         val sharpened = Mat()
@@ -128,8 +141,8 @@ object ImageProcessor {
             255.0,
             Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
             Imgproc.THRESH_BINARY,
-            EnhanceParams.thresholdBlockSize,
-            EnhanceParams.thresholdConstant
+            blockSize,
+            constant
         )
 
         sharpenKernel.release()
@@ -138,6 +151,39 @@ object ImageProcessor {
         sharpened.release()
 
         return thresh
+    }
+
+    private fun calculateBrightness(src: Mat): Double {
+        val mean = org.opencv.core.Mat()
+        val std = org.opencv.core.Mat()
+        Imgproc.meanStdDev(src, mean, std)
+        val brightness = mean.get(0, 0)[0] / 255.0
+        mean.release()
+        std.release()
+        return brightness
+    }
+
+    private fun calculateContrast(src: Mat): Double {
+        val mean = org.opencv.core.Mat()
+        val std = org.opencv.core.Mat()
+        Imgproc.meanStdDev(src, mean, std)
+        val contrast = std.get(0, 0)[0] / 255.0
+        mean.release()
+        std.release()
+        return contrast
+    }
+
+    private fun calculateNoise(src: Mat): Double {
+        val laplacian = Mat()
+        Imgproc.Laplacian(src, laplacian, org.opencv.core.CvType.CV_64F)
+        val mean = org.opencv.core.Mat()
+        val std = org.opencv.core.Mat()
+        Imgproc.meanStdDev(laplacian, mean, std)
+        val noise = std.get(0, 0)[0] / 100.0
+        laplacian.release()
+        mean.release()
+        std.release()
+        return noise
     }
 
     fun cropRectangle(bitmap: Bitmap, cropRect: android.graphics.Rect): Bitmap {
