@@ -3,7 +3,6 @@ package com.paperscanner.app.ui
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.addTextChangedListener
 import com.paperscanner.app.databinding.ActivitySettingsBinding
 import com.paperscanner.app.util.EnhanceParams
 
@@ -17,7 +16,6 @@ class SettingsActivity : AppCompatActivity() {
         try {
             binding = ActivitySettingsBinding.inflate(layoutInflater)
             setContentView(binding.root)
-            
             setupUI()
             loadCurrentParams()
         } catch (e: Exception) {
@@ -28,9 +26,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        binding.btnBack.setOnClickListener {
-            finish()
-        }
+        binding.btnBack.setOnClickListener { finish() }
 
         binding.sbBlurSize.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
@@ -123,20 +119,17 @@ class SettingsActivity : AppCompatActivity() {
     private fun selectAutoLevel(level: EnhanceParams.AutoModeLevel) {
         EnhanceParams.autoModeLevel = level
         
-        binding.btnLevelWeak.apply {
-            setTextColor(if (level == EnhanceParams.AutoModeLevel.WEAK) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
-            setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.WEAK) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
-        }
+        val primaryColor = 0xFFFFFFFF.toInt()
+        val textColor = 0xFF000000.toInt()
         
-        binding.btnLevelNormal.apply {
-            setTextColor(if (level == EnhanceParams.AutoModeLevel.NORMAL) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
-            setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.NORMAL) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
-        }
+        binding.btnLevelWeak.setTextColor(if (level == EnhanceParams.AutoModeLevel.WEAK) primaryColor else textColor)
+        binding.btnLevelWeak.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.WEAK) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
         
-        binding.btnLevelStrong.apply {
-            setTextColor(if (level == EnhanceParams.AutoModeLevel.STRONG) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
-            setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.STRONG) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
-        }
+        binding.btnLevelNormal.setTextColor(if (level == EnhanceParams.AutoModeLevel.NORMAL) primaryColor else textColor)
+        binding.btnLevelNormal.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.NORMAL) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
+        
+        binding.btnLevelStrong.setTextColor(if (level == EnhanceParams.AutoModeLevel.STRONG) primaryColor else textColor)
+        binding.btnLevelStrong.setBackgroundResource(if (level == EnhanceParams.AutoModeLevel.STRONG) com.paperscanner.app.R.drawable.bg_circle_semi_transparent else com.paperscanner.app.R.drawable.btn_gray_bg)
     }
 
     private fun saveParams() {
